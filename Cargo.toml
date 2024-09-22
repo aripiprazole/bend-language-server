@@ -10,13 +10,13 @@ readme = "README.md"
 keywords = ["bend", "language-server", "lsp"]
 categories = ["text-editors", "development-tools"]
 exclude = [
-    ".vscode",
-    "editors",
-    ".vscodeignore",
-    "package.json",
-    "pnpm-lock.yaml",
-    "tsconfig.json",
-    "webpack.config.js",
+  ".vscode",
+  "editors",
+  ".vscodeignore",
+  "package.json",
+  "pnpm-lock.yaml",
+  "tsconfig.json",
+  "webpack.config.js",
 ]
 
 [dependencies]
@@ -24,13 +24,13 @@ bend-lang = { version = "0.2.37-alpha.1" }
 tree-sitter-bend = { version = "0.2.37-alpha.3" }
 tower-lsp = { version = "0.20", features = ["proposed"] }
 tokio = { version = "1.39", features = [
-    "sync",
-    "macros",
-    "io-util",
-    "rt",
-    "rt-multi-thread",
-    "io-std",
-    "time",
+  "sync",
+  "macros",
+  "io-util",
+  "rt",
+  "rt-multi-thread",
+  "io-std",
+  "time",
 ] }
 serde = { version = "1.0", features = ["derive"] }
 anyhow = "1.0"

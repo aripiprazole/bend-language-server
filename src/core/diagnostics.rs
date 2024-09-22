@@ -9,7 +9,7 @@ use super::document::Document;
 use crate::utils::color_wrapper::treat_colors;
 
 /// Checks a Bend file and return its diagnostics.
-pub fn check(doc: &Document) -> Diagnostics {
+pub fn check(doc: &mut Document) -> Diagnostics {
     let path = Path::new(doc.url.path());
     let diagnostics_config = DiagnosticsConfig::new(Severity::Warning, true);
     let compile_opts = CompileOpts::default();
@@ -17,6 +17,7 @@ pub fn check(doc: &Document) -> Diagnostics {
     let package_loader = DefaultLoader::new(path);
 
     let diagnostics = bend::load_file_to_book(path, package_loader, diagnostics_config)
+        .inspect(|value| doc.ast = value.clone())
         .and_then(|mut book| check_book(&mut book, diagnostics_config, compile_opts));
 
     match diagnostics {
@@ -81,7 +82,7 @@ fn find_def(doc: &Document, name: &str) -> Option<lsp::Range> {
         .map(|node| ts_range_to_lsp(node.range()))
 }
 
-fn span_to_range(span: &Option<TextSpan>) -> lsp::Range {
+pub fn span_to_range(span: &Option<TextSpan>) -> lsp::Range {
     span.as_ref()
         .map(|span| lsp::Range {
             start: Position {

@@ -1,3 +1,7 @@
+use std::path::Path;
+
+use bend::diagnostics::{DiagnosticsConfig, Severity};
+use bend::fun::load_book::load_to_book;
 use ropey::Rope;
 use tower_lsp::lsp_types as lsp;
 use tree_sitter as ts;
@@ -13,7 +17,7 @@ pub struct Document {
     pub tree: Option<ts::Tree>,
     pub parser: ts::Parser,
     pub highlighter: hg::Highlighter,
-    // pub components: HashMap<String, ComponentInfo>
+    pub ast: bend::fun::Book, // pub components: HashMap<String, ComponentInfo>
 }
 
 impl Document {
@@ -25,6 +29,7 @@ impl Document {
             tree: None,
             parser: bend_parser().unwrap(),
             highlighter: Highlighter::new(),
+            ast: bend::fun::Book::default(),
         }
     }
 
@@ -59,6 +64,20 @@ impl Document {
             .flat_map(|(m, _)| m.captures)
             .next()
             .map(|capture| capture.node)
+    }
+
+    pub fn find_many(&self, query: &str) -> Option<Vec<ts::Node>> {
+        let mut cursor = ts::QueryCursor::new();
+        let query = ts::Query::new(&bend(), query).unwrap();
+        let root = self.tree.as_ref()?.root_node();
+
+        Some(
+            cursor
+                .captures(&query, root, &TextProviderRope(&self.text))
+                .flat_map(|(m, _)| m.captures)
+                .map(|capture| capture.node)
+                .collect(),
+        )
     }
 
     fn do_parse(&mut self) -> Option<ts::Tree> {

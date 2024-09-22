@@ -151,14 +151,18 @@ impl LanguageServer for Backend {
         }))
     }
 
+    async fn goto_definition(
+        &self,
+        params: lsp::GotoDefinitionParams,
+    ) -> Result<Option<lsp::GotoDefinitionResponse>> {
+        crate::core::definitions::goto_definition(self, params).await
+    }
+
     async fn completion(
         &self,
-        _: lsp::CompletionParams,
+        params: lsp::CompletionParams,
     ) -> Result<Option<lsp::CompletionResponse>> {
-        Ok(Some(lsp::CompletionResponse::Array(vec![
-            lsp::CompletionItem::new_simple("Hello".to_string(), "Some detail".to_string()),
-            lsp::CompletionItem::new_simple("Bye/Bye".to_string(), "More detail".to_string()),
-        ])))
+        crate::core::definitions::completion(self, params).await
     }
 
     async fn hover(&self, _: lsp::HoverParams) -> Result<Option<lsp::Hover>> {
@@ -215,15 +219,15 @@ impl Backend {
                     },
                 ),
             ),
-            // definition_provider: Some(lsp::OneOf::Left(true)),
-            // completion_provider: Some(lsp::CompletionOptions {
-            //     resolve_provider: Some(false),
-            //     trigger_characters: Some(vec!["/".into()]),
-            //     all_commit_characters: None,
-            //     work_done_progress_options: Default::default(),
-            //     completion_item: None,
-            // }),
-            // hover_provider: Some(lsp::HoverProviderCapability::Simple(false)),
+            definition_provider: Some(lsp::OneOf::Left(true)),
+            completion_provider: Some(lsp::CompletionOptions {
+                resolve_provider: Some(false),
+                trigger_characters: Some(vec!["/".into()]),
+                all_commit_characters: None,
+                work_done_progress_options: Default::default(),
+                completion_item: None,
+            }),
+            //hover_provider: Some(lsp::HoverProviderCapability::Simple(false)),
             ..Default::default()
         }
     }
@@ -238,8 +242,9 @@ impl Backend {
     /// Publish diagnostics for document `url`.
     async fn publish_diagnostics(&self, url: &lsp::Url) {
         let diags = self
-            .read_document(url, |doc| {
-                Some(diagnostics::lsp_diagnostics(doc, &diagnostics::check(doc)))
+            .read_document_mut(url, |doc| {
+                let diagnostics = diagnostics::check(doc);
+                Some(diagnostics::lsp_diagnostics(doc, &diagnostics))
             })
             .unwrap_or_default();
 
@@ -261,7 +266,7 @@ impl Backend {
     }
 
     /// Read the contents of `url` using function `reader`.
-    fn read_document<F, T>(&self, url: &lsp::Url, reader: F) -> Option<T>
+    pub fn read_document<F, T>(&self, url: &lsp::Url, reader: F) -> Option<T>
     where
         F: Fn(&document::Document) -> Option<T>,
     {
